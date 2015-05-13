@@ -21,30 +21,42 @@ game.createClass('Block', {
             //game.scene.world.addBody(this.body);
             //add sprite to display container
             //game.scene.stage.addChild(this);
+           
             game.scene.stage.addChild(this.sprite);
         }
 });
 
 
 game.createClass('Ball', {
-    interactive: true,
+    
     init: function (x, y) {
         //this._super(spritename, x, y, { anchor: { x: 0.5, y: 0.5 } });
         this.sprite = new game.Sprite('Player.png');
         this.sprite.position = { x: x, y: y };
+        this.sprite.interactive = true;
         
         //add body of this sprite to the world object
         //game.scene.world.addBody(this.body);
         //add sprite to display container
         //game.scene.stage.addChild(this);
-        game.scene.addObject(this.sprite);
+        //game.scene.addObject(this.sprite);
         game.scene.stage.addChild(this.sprite);
+        console.log("test");
     },
     update: function () {
         console.log("test");
             // Check if key is currently down
-        if (game.keyboard.down('SPACE')) {
-           
+        if (game.keyboard.down('LEFT')) {
+            this.sprite.position.x -= 5;
+        }
+        if (game.keyboard.down('RIGHT')) {
+            this.sprite.position.x += 5;
+        }
+        if (game.keyboard.down('UP')) {
+            this.sprite.position.y -= 5;
+        }
+        if (game.keyboard.down('DOWN')) {
+            this.sprite.position.y += 5;
         }
 
     },
@@ -81,7 +93,7 @@ game.createScene('Main', {
             test = new game.Block(rnd, Math.random() * game.system.height, 'Square.png');
         }
 
-        new game.Ball(920, 350, 'Player.png');
+        this.addObject( new game.Ball(920, 350, 'Player.png') );
 
 
     }
