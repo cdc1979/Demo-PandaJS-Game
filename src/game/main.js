@@ -24,19 +24,17 @@ game.module(
             this.shape.beginFill(0x000000, 1);
             this.shape.drawRect(x, y, width, height);
             this.shape.endFill();
-           this.shape.drawRect(x, y, width, height);
+            game.scene.stage.addChild(this.shape);
 
            this.body = new game.Body({
-               position: { x: 0, y: 0 },
+               position: { x: x, y: y },
                collisionGroup: 0,
-               collideAgainst: 0,
-               fixed: true
+               world: game.scene.world
            });
 
-
-           this.body.addShape(new game.Rectangle(1024, 50));
-            //game.scene.stage.addBody(this.body);
-
+           
+           this.shaperect = new game.Rectangle(width, height);
+           this.body.addShape(this.shaperect);
            game.scene.world.addBody(this.body);
         }
     });
@@ -170,9 +168,9 @@ game.createClass('Ball', {
             collisionGroup: 0,
             collideAgainst: 0,
             velocity: { x: 0, y: 0 },
-            mass: 1
+            mass: 100,
+            world: game.scene.world
         });
-
         //add body of this sprite to the world object
         
         //add sprite to display container
@@ -187,6 +185,10 @@ game.createClass('Ball', {
         game.scene.world.addBody(this.body);
        
         console.log("test");
+        this.update();
+    },
+    collide: function() {
+        console.log("hit");
     },
     update: function () {
 
@@ -239,7 +241,8 @@ game.createScene('Main', {
     backgroundColor: 0xb9bec7,
 
     init: function() {
-        this.world = new game.World(0, 0);
+        this.world = new game.World(0, 1);
+
         var sprite = new game.TilingSprite('Background.jpg', 0, 0);
         sprite.addTo(game.scene.stage);
 
@@ -256,7 +259,7 @@ game.createScene('Main', {
 
         this.addObject(new game.Wall(0, 0, 1024, 50));
         this.addObject(new game.Wall(0, 718, 1024, 50));
-        this.addObject(new game.Wall(1024-50, 0, 50, 768));
+        this.addObject(new game.Wall(1024-10, 0, 50, 768));
 
         this.addObject(new game.Ball(890, 350, 'Player.png'));
 
