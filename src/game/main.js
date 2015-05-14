@@ -16,6 +16,31 @@ game.module(
     var topspeed = 500;
     var accel = 10;
 
+    game.createClass('Wall', {
+
+        init: function (x, y, width, height) {
+
+            this.shape = new game.Graphics();
+            this.shape.beginFill(0x000000, 1);
+            this.shape.drawRect(x, y, width, height);
+            this.shape.endFill();
+           this.shape.drawRect(x, y, width, height);
+
+           this.body = new game.Body({
+               position: { x: 0, y: 0 },
+               collisionGroup: 0,
+               collideAgainst: 0,
+               fixed: true
+           });
+
+
+           this.body.addShape(new game.Rectangle(1024, 50));
+            //game.scene.stage.addBody(this.body);
+
+           game.scene.world.addBody(this.body);
+        }
+    });
+
 game.createClass('Block', {
         init: function (spritename) {
             //this._super(spritename, x, y, { anchor: { x: 0.5, y: 0.5 } });
@@ -89,7 +114,7 @@ game.createClass('Button', {
         //game.scene.stage.addChild(this);
         //game.scene.addObject(this.sprite);
         this.sprite.click = function () {
-            console.log("sprite received a click!");
+            //console.log("sprite received a click!");
             game.system.setScene('Main');
         };
         var t = this;
@@ -229,7 +254,11 @@ game.createScene('Main', {
             test = new game.Block('Square.png');
         }
 
-        this.addObject(new game.Ball(920, 350, 'Player.png'));
+        this.addObject(new game.Wall(0, 0, 1024, 50));
+        this.addObject(new game.Wall(0, 718, 1024, 50));
+        this.addObject(new game.Wall(1024-50, 0, 50, 768));
+
+        this.addObject(new game.Ball(890, 350, 'Player.png'));
 
      
 
