@@ -1,5 +1,26 @@
+function getNonZeroRandomNumber() {
+    var random = Math.floor(Math.random() * 199) - 99;
+    if (random == 0) return getNonZeroRandomNumber();
+    return random;
+}
+
+function randomIntFromInterval(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function randomBetween(min, max) {
+    if (min < 0) {
+        return min + Math.random() * (Math.abs(min) + max);
+    } else {
+        return min + Math.random() * max;
+    }
+}
+
 game.module(
     'game.main'
+)
+    .require(
+	'plugins.physicsextend'
 )
 .body(function() {
 
@@ -14,28 +35,50 @@ game.module(
     game.addAsset('Splash.jpg');
 
     var topspeed = 500;
-    var accel = 10;
+    var yaccel = 50;
+    var xaccel = 20;
 
     game.createClass('Wall', {
 
         init: function (x, y, width, height) {
 
-            this.shape = new game.Graphics();
-            this.shape.beginFill(0x000000, 1);
-            this.shape.drawRect(x, y, width, height);
-            this.shape.endFill();
-            game.scene.stage.addChild(this.shape);
+            //this.shape = new game.Graphics();
+            //this.shape.beginFill(0x000000, 1);
+            //this.shape.drawRect(x, y, width, height);
+            //this.shape.endFill();
+            //game.scene.stage.addChild(this.shape);
+            this.shaperect = new game.Rectangle(width, height);
 
            this.body = new game.Body({
                position: { x: x, y: y },
                collisionGroup: 0,
-               world: game.scene.world
+               collideAgainst: [1,6,9],
+               fixed: true
            });
-
-           
-           this.shaperect = new game.Rectangle(width, height);
            this.body.addShape(this.shaperect);
            game.scene.world.addBody(this.body);
+        }
+    });
+
+    game.createClass('LeftWall', {
+
+        init: function (x, y, width, height) {
+
+            //this.shape = new game.Graphics();
+            //this.shape.beginFill(0x000000, 1);
+            //this.shape.drawRect(x, y, width, height);
+            //this.shape.endFill();
+            //game.scene.stage.addChild(this.shape);
+            this.shaperect = new game.Rectangle(width, height);
+
+            this.body = new game.Body({
+                position: { x: x, y: y },
+                collisionGroup: 4,
+                collideAgainst: [6],
+                fixed: true
+            });
+            this.body.addShape(this.shaperect);
+            game.scene.world.addBody(this.body);
         }
     });
 
@@ -44,45 +87,29 @@ game.createClass('Block', {
             //this._super(spritename, x, y, { anchor: { x: 0.5, y: 0.5 } });
             this.sprite = new game.Sprite(spritename);
 
-            var rndx = (Math.random() * game.system.width);
-            var rndy = (Math.random() * game.system.height);
-
-            if (rndx > 850) { rndx = 800; }
-            if (rndx < 150) { rndx = 200; }
+            var rndx = randomIntFromInterval(100,800);
+            var rndy = randomIntFromInterval(100, 600);
 
             this.sprite.position = { x: rndx, y: rndy };
             this.sprite.width = 50;
             this.sprite.height = 50;
+            this.sprite.anchor.x = 0.5;
+            this.sprite.anchor.y = 0.5;
+            game.scene.stage.addChild(this.sprite);
 
-            var ry = Math.floor((Math.random() * 768) + 1);
-            var rx = Math.floor((Math.random() * 800) + 1);
-            var rs = Math.floor((Math.random() * 10000) + 1);
-            if (rx < 200) { rx = 200; }
+            //this._super(spritename, x, y, { anchor: { x: 0.5, y: 0.5 } });
+            this.body = new game.Body({
+                position: { x: rndx, y: rndy },
+                collisionGroup: 9,
+                collideAgainst: [0,4,9],
+                velocity: { x: randomBetween(-200, 200), y: randomBetween(-200, 200) },
+                velocityLimit: { x: 300, y: 300 },
+                mass: 0
+            });
 
-            if (spritename === "Circle.png") {
-                var tween = new game.Tween(this.sprite.position);
-                tween.to({ x: rx, y: ry }, rs);
-                tween.repeat(999999);
-                tween.yoyo();
-                tween.start();
-            }
-
-            if (spritename === "Square.png") {
-                var tween = new game.Tween(this.sprite.position);
-                tween.to({ x: rx, y: ry }, rs);
-                tween.repeat(999999);
-                tween.yoyo();
-                tween.start();
-            }
-
-            if (spritename === "Triangle.png") {
-
-                var tween = new game.Tween(this.sprite.position);
-                tween.to({ x: rx, y: ry }, rs);
-                tween.repeat(999999);
-                tween.yoyo();
-                tween.start();
-            }
+            //this.body.collide = this.collide.bind(this);
+            this.body.addShape(new game.Rectangle(50,50));
+            game.scene.world.addBody(this.body);
 
             //game.scene.addObject(this);
             //add body of this sprite to the world object
@@ -90,9 +117,14 @@ game.createClass('Block', {
             //add sprite to display container
             //game.scene.stage.addChild(this);
            
-            game.scene.stage.addChild(this.sprite);
+            
+        },
+        collide: function () {
+
         },
         update: function () {
+            this.sprite.position.x = this.body.position.x;
+            this.sprite.position.y = this.body.position.y;
 
         }
 });
@@ -157,38 +189,27 @@ game.createClass('Ball', {
     
     init: function (x, y) {
 
-        this.world = new game.World();
         //this._super(spritename, x, y, { anchor: { x: 0.5, y: 0.5 } });
         this.sprite = new game.Sprite('Player.png');
         this.sprite.width = 50;
         this.sprite.height = 50;
-        
+        this.sprite.anchor = { x: 0.5, y: 0.5};
         this.body = new game.Body({
             position: { x: 950, y: 330 },
-            collisionGroup: 0,
-            collideAgainst: 0,
+            collisionGroup: 1,
+            collideAgainst: [0,3,9],
             velocity: { x: 0, y: 0 },
-            mass: 100,
-            world: game.scene.world
+            velocityLimit: { x: 500, y: 500 },
+            mass: 1,
+            restitution: 0.5
         });
-        //add body of this sprite to the world object
-        
-        //add sprite to display container
-        //game.scene.stage.addChild(this);
-        //game.scene.addObject(this.sprite);
-       // game.scene.addObject(this.body);
-        game.scene.stage.addChild(this.sprite);
-
-        this.body.addShape(new game.Rectangle(50, 50));
-        //game.scene.stage.addBody(this.body);
-
+        //this.body.collide = this.collide.bind(this);
+        this.body.addShape(new game.Circle(25));
         game.scene.world.addBody(this.body);
-       
-        console.log("test");
-        this.update();
+
     },
     collide: function() {
-        console.log("hit");
+
     },
     update: function () {
 
@@ -205,21 +226,17 @@ game.createClass('Ball', {
             // Check if key is currently down
         if (game.keyboard.down('LEFT')) {
             
-            this.body.velocity.x -= accel;
-            if (this.body.velocity.x < 0 - topspeed) { this.body.velocity.x = 0 - topspeed; }
+            this.body.velocity.x -= xaccel;
 
         }
         if (game.keyboard.down('RIGHT')) {
-            this.body.velocity.x += accel;
-            if (this.body.velocity.x > topspeed) { this.body.velocity.x = topspeed; }
+            this.body.velocity.x += xaccel;
         }
         if (game.keyboard.down('UP')) {
-            this.body.velocity.y -= accel;
-            if (this.body.velocity.y < 0-topspeed) { this.body.velocity.y = 0-topspeed; }
+            this.body.velocity.y -= yaccel;
         }
         if (game.keyboard.down('DOWN')) {
-            this.body.velocity.y += accel;
-            if (this.body.velocity.y > topspeed) { this.body.velocity.y = topspeed; }
+            this.body.velocity.y += yaccel;
         }
 
     },
@@ -241,29 +258,26 @@ game.createScene('Main', {
     backgroundColor: 0xb9bec7,
 
     init: function() {
-        this.world = new game.World(0, 1);
-
+        this.world = new game.World(0,500);
         var sprite = new game.TilingSprite('Background.jpg', 0, 0);
         sprite.addTo(game.scene.stage);
 
-        for (var i = 0; i < 8; i++) {
-            test = new game.Block('Circle.png');
-        }
-        for (var i = 0; i < 8; i++) {
-            this.addObject( new game.Block('Triangle.png') );
-        }
-        for (var i = 0; i < 8; i++) {
-            
-            test = new game.Block('Square.png');
+        var numblocks = 10;
+
+        for (var i = 0; i < numblocks; i++) {
+            this.addObject(new game.Block('Square.png'));
         }
 
-        this.addObject(new game.Wall(0, 0, 1024, 50));
-        this.addObject(new game.Wall(0, 718, 1024, 50));
-        this.addObject(new game.Wall(1024-10, 0, 50, 768));
+
+        this.addObject(new game.Wall(0, 0, 3000, 50));
+        this.addObject(new game.Wall(0, 740, 3000, 50));
+        this.addObject(new game.Wall(1024 - 10, 0, 50, 2000));
+
+        this.addObject(new game.LeftWall(0, 100, 50, 2000));
+        this.addObject(new game.LeftWall(870, 100, 50, 2000));
 
         this.addObject(new game.Ball(890, 350, 'Player.png'));
 
-     
 
 
     }
