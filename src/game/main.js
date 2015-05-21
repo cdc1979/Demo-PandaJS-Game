@@ -26,7 +26,8 @@ BALL = Math.pow(2,2),
 TOPBOTTOM = Math.pow(2, 3)
 
 game.module(
-    'game.sprites'
+    'game.sprites',
+    'game.main'
 )
 .require(
     'engine.core',
@@ -288,8 +289,7 @@ game.createClass('Ball', {
     textobject: null,
     init: function (x, y) {
 
-        this.textobject = new game.PIXI.Text("Hello World!", { font: '60px Arial' });
-        game.scene.stage.addChild(this.textobject);
+
 
         var shape = new game.Circle(25 / game.scene.world.ratio);
         shape.collisionGroup = BALL;
@@ -343,8 +343,7 @@ game.createClass('Ball', {
 
 
 
-        //console.log(gametime);
-        this.textobject.setText(textCount);
+
         //game.world.gametimer.setText(gameTime);
         this.sprite.position.x = this.body.position[0] * game.scene.world.ratio;
         this.sprite.position.y = this.body.position[1] * game.scene.world.ratio;
@@ -402,12 +401,22 @@ game.createScene('Start', {
 
 game.createScene('Main', {
     backgroundColor: 0xb9bec7,
+    update: function () {
+        this.world.delta += game.system.delta;
+        //console.log(gametime);
+        
+        this._super();
+        this.world.textsprite.setText(this.world.delta);
+    },
     init: function() {
         //this.world = new game.World(0, 1000);
         this.world = new game.World({ gravity: [0,9] });
         this.world.ratio = 100;
         this.world.gameTime = gameTime;
-        this.world.delta  = game.system.delta;
+        this.world.delta = game.system.delta;
+
+
+
         this.world.on("beginContact", function (event) {
 
             if (event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == BLOCK) {
@@ -498,6 +507,9 @@ game.createScene('Main', {
         }, true);
 
         game.scene.addObject(new game.Ball(890, 350));
+
+        this.world.textsprite = new game.PIXI.Text("Hello World!", { font: '60px Arial' });
+        this.world.textsprite.addTo(game.scene.stage);
 
         //var text = new game.BitmapText('Hello', { font: 'Arial' });
         //this.addObject(text);
