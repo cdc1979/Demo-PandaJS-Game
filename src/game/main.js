@@ -539,10 +539,11 @@ game.createScene('Main', {
                         if (st == "invulnerable") {
                             wld.ball.sprite.alpha = 0.5;
                             game.invulnerable = true;
+
                             g.addTimer(5000, function () {
                                 game.invulnerable = false;
                                 wld.ball.sprite.alpha = 1;
-                            }, true);
+                            }, false);
                         }
                         else {
                             spriteDelay = 850;
@@ -564,7 +565,7 @@ game.createScene('Main', {
                                 g.addTimer(5000, function () {
                                     game.invulnerable = false;
                                     wld.ball.sprite.alpha = 1;
-                                }, true);
+                                }, false);
 
 
                             }
