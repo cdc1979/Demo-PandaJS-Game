@@ -18,10 +18,12 @@ function randomBetween(min, max) {
 
 var gameTime = 0;
 var textCount = 0;
+var spriteDelay = 1000;
 
 var WALL = Math.pow(2,0),
 BLOCK =  Math.pow(2,1),
-BALL = Math.pow(2,2)
+BALL = Math.pow(2,2),
+TOPBOTTOM = Math.pow(2, 3)
 
 game.module(
     'game.sprites'
@@ -38,13 +40,18 @@ game.module(
     game.addAsset('Circle.png');
     game.addAsset('Square.png');
     game.addAsset('Triangle.png');
+    game.addAsset('High-Score.png');
     game.addAsset('Orb.png');
     game.addAsset('panda.png');
     game.addAsset('start.png');
-    game.addAsset('Splash.jpg');
+    game.addAsset('splash.jpg');
     game.addAsset('You-Lose.png');
     game.addAsset('Winner.png');
-    game.addAsset('Game-Title.png')
+    game.addAsset('Game-Title.png');
+
+    game.addAudio('punch.ogg', 'punch');
+    game.addAudio('Blop.ogg', 'Blop');
+
 
     var topspeed = 500;
     var yaccel = 50;
@@ -95,7 +102,11 @@ game.module(
 
     game.createClass('Block', {
         size: 50,
-        init: function (x,y) {
+        init: function (x, y) {
+
+            console.log("blobk");
+            game.audio.playSound("Blop", false);
+
             var shape = null;
             var str = "";
             var rnd = Math.random();
@@ -111,7 +122,7 @@ game.module(
                 var vertices = [];
                 for (var i = 0, N = 3; i < N; i++) {
                     var a = 2 * Math.PI / N * i;
-                    var vertex = [1 * 0.5 * Math.cos(a), 1 * 0.5 * Math.sin(a)]; // Note: vertices are added counter-clockwise
+                    var vertex = [1 * 0.4 * Math.cos(a), 1 * 0.4 * Math.sin(a)]; // Note: vertices are added counter-clockwise
                     vertices.push(vertex);
                 }
                 var p = new game.Convex(vertices);
@@ -120,7 +131,7 @@ game.module(
             }
 
             shape.collisionGroup = BLOCK;
-            shape.collisionMask = BALL | BLOCK;
+            shape.collisionMask = BALL | BLOCK | TOPBOTTOM;
 
             this.body = new game.Body({
                 gravityScale: 0,
@@ -129,15 +140,18 @@ game.module(
                     x / game.scene.world.ratio,
                     y / game.scene.world.ratio
                 ],
-                angularVelocity: 5
+                angularVelocity: 10
             });
             this.body.addShape(shape);
 
             // Apply velocity
-            var force = randomBetween(1,6);
-            var angle = randomBetween(90, 180) / game.scene.world.ratio;
-            this.body.velocity[0] = Math.sin(angle) * force;
-            this.body.velocity[1] = Math.cos(angle) * force;
+            var force = randomBetween(3, 6);
+
+            var angle = randomBetween(-100,100) / game.scene.world.ratio;
+
+            this.body.velocity[0] = 1 * force;
+            this.body.velocity[1] = angle * force;
+            //this.body.velocity[1] = 0.1 * force;
 
             //this.body.setDensity(0.1);
 
@@ -150,7 +164,7 @@ game.module(
             //game.scene.addObject(this);
             game.scene.stage.addChild(this.sprite);
             game.scene.world.addBody(this.body);
-            game.scene.addTimer(5000, this.remove.bind(this));
+            game.scene.addTimer(8000, this.remove.bind(this));
             
         },
         remove: function () {
@@ -203,7 +217,7 @@ game.createScene('Win', {
     backgroundColor: 0x000000,
 
     init: function () {
-        this.sprite = new game.TilingSprite('Splash.jpg', 1024, 768);
+        this.sprite = new game.TilingSprite('splash.jpg', 1024, 768);
         this.sprite.addTo(game.scene.stage);
         this.sprite2 = new game.TilingSprite('Winner.png');
         this.sprite2.position.x = 200;
@@ -220,15 +234,50 @@ game.createScene('Lose', {
     backgroundColor: 0x000000,
 
     init: function () {
-        this.sprite = new game.TilingSprite('Splash.jpg', 1024, 768);
+        game.audio.playSound("punch", false);
+
+        this.sprite = new game.TilingSprite('splash.jpg', 1024, 768);
         this.sprite.addTo(game.scene.stage);
 
-        this.sprite2 = new game.TilingSprite('You-Lose.png');
-        this.sprite2.position.x = 200;
-        this.sprite2.position.y = 105;
-        this.sprite2.addTo(game.scene.stage);
+
+
+        this.textobject = new game.PIXI.Text(gameTime, {
+            font: '72px Arial',
+            fill: "#fd0000",
+            stroke: '#000000',
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowAngle: Math.PI / 4,
+            dropShadowDistance: 5
+        });
+        game.scene.stage.addChild(this.textobject);
+        this.textobject.position.x=440
+        this.textobject.position.y=220
+
+        var hs = localStorage.getItem("highscore");
+         if (gameTime > hs) {
+        // if(true){
+            localStorage.setItem("highscore", gameTime);
+            this.sprite2 = new game.Sprite('High-Score.png');
+            this.sprite2.position.x = 200;
+            this.sprite2.position.y = 105;
+            this.sprite2.scale.x =1.2 ;
+            this.sprite2.scale.y =1.2 ;
+            this.sprite2.addTo(game.scene.stage);
+        }
+        else {
+            this.sprite2 = new game.Sprite('You-Lose.png');
+            this.sprite2.position.x = 200;
+            this.sprite2.position.y = 105;
+            this.sprite2.addTo(game.scene.stage);
+           
+        }
 
         this.addObject(new game.Button());
+
+        gameTime = 0;
+        textCount = 0;
+        spriteDelay = 1000;
 
 
     }
@@ -244,9 +293,9 @@ game.createClass('Ball', {
 
         var shape = new game.Circle(25 / game.scene.world.ratio);
         shape.collisionGroup = BALL;
-        shape.collisionMask = BLOCK | WALL;
+        shape.collisionMask = BLOCK | WALL | TOPBOTTOM;
         this.body = new game.Body({
-            mass: 1,
+            mass: 0.2,
             gravityScale: 1,
             position: [
                 x / game.scene.world.ratio,
@@ -281,9 +330,19 @@ game.createClass('Ball', {
     update: function () {
         //this.gametime++;
         gameTime++;
+
         if (gameTime % 60 == 1) {
+            console.log(spriteDelay);
             textCount++;
+            
+            if (spriteDelay > 100) {
+                spriteDelay = spriteDelay - 30;
+                game.scene.world.timer.set(spriteDelay);
+            }
         }
+
+
+
         //console.log(gametime);
         this.textobject.setText(textCount);
         //game.world.gametimer.setText(gameTime);
@@ -327,7 +386,7 @@ game.createScene('Start', {
     backgroundColor: 0x000000,
 
     init: function () {
-        this.sprite = new game.TilingSprite('Splash.jpg', 1024, 768);
+        this.sprite = new game.TilingSprite('splash.jpg', 1024, 768);
         this.sprite2 = new game.TilingSprite('Game-Title.png');
         this.sprite2.position.x = 260;
         this.sprite2.position.y = 105;
@@ -345,13 +404,36 @@ game.createScene('Main', {
     backgroundColor: 0xb9bec7,
     init: function() {
         //this.world = new game.World(0, 1000);
-        this.world = new game.World({ gravity: [0,15] });
+        this.world = new game.World({ gravity: [0,9] });
         this.world.ratio = 100;
         this.world.gameTime = gameTime;
+        this.world.delta  = game.system.delta;
+        this.world.on("beginContact", function (event) {
 
+            if (event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == BLOCK) {
+
+                //game.scene.removeObject(this);
+                //game.scene.world.removeBody(event.bodyA);
+                //game.scene.stage.removeChild(event.bodyA.options.sprite);
+                //game.scene.world.removeBody(event.bodyB);
+
+
+                game.system.setScene('Lose');
+
+                
+            }
+
+            if (event.shapeB.collisionGroup == BLOCK && event.shapeA.collisionGroup == BALL) {
+                //game.scene.world.removeBody(event.bodyB);
+                //game.scene.stage.removeChild(event.bodyB.options.sprite);
+                game.system.setScene('Lose');
+
+                
+            }
+        });
 
         var sprite = new game.TilingSprite('Background.png', 0, 0);
-        sprite.speed.x = 1000;
+        sprite.speed.x =400;
         sprite.addTo(game.scene.stage);
         game.scene.addObject(sprite);
 
@@ -362,7 +444,7 @@ game.createScene('Main', {
         wallShape.collisionGroup = WALL;
         wallShape.collisionMask = BALL;
         wallBody = new game.Body({
-            position: [0, game.system.height / 2 / this.world.ratio], mass: 1, restitution: 1, type: p2.Body.STATIC
+            position: [0, game.system.height / 2 / this.world.ratio]
         });
 
         wallBody.addShape(wallShape);
@@ -373,26 +455,26 @@ game.createScene('Main', {
         wallShape.collisionGroup = WALL;
         wallShape.collisionMask = BALL;
         wallBody = new game.Body({
-            position: [game.system.width / this.world.ratio, game.system.height / 2 / this.world.ratio], type: p2.Body.STATIC, mass: 1, restitution: 1
+            position: [game.system.width / this.world.ratio, game.system.height / 2 / this.world.ratio]
         });
 
         wallBody.addShape(wallShape);
         this.world.addBody(wallBody);
 
         wallShape = new game.Rectangle(game.system.width / this.world.ratio, 50 / this.world.ratio);
-        wallShape.collisionGroup = WALL;
-        wallShape.collisionMask = BALL;
+        wallShape.collisionGroup = TOPBOTTOM;
+        wallShape.collisionMask = BALL | BLOCK;
         wallBody = new game.Body({
-            position: [game.system.width / 2 / this.world.ratio, game.system.height / this.world.ratio], mass: 1, restitution: 1, type: p2.Body.STATIC
+            position: [game.system.width / 2 / this.world.ratio, game.system.height / this.world.ratio]
         });
         wallBody.addShape(wallShape);
         this.world.addBody(wallBody);
 
         wallShape = new game.Rectangle(game.system.width / this.world.ratio, 50 / this.world.ratio);
-        wallShape.collisionGroup = WALL;
-        wallShape.collisionMask = BALL;
+        wallShape.collisionGroup = TOPBOTTOM;
+        wallShape.collisionMask = BALL | BLOCK;
         wallBody = new game.Body({
-            position: [game.system.width / 2 / this.world.ratio, 0], mass: 1, restitution: 1, type: p2.Body.STATIC
+            position: [game.system.width / 2 / this.world.ratio, 0]
         });
         wallBody.addShape(wallShape);
         this.world.addBody(wallBody);
@@ -410,8 +492,8 @@ game.createScene('Main', {
             game.scene.addObject(new game.Block('Triangle.png'));
         }*/
 
-        this.addTimer(200, function () {
-            var object = new game.Block(50, game.system.height / 2);
+        this.world.timer = this.addTimer(spriteDelay, function () {
+            var object = new game.Block(-100, game.system.height / 2);
             game.scene.addObject(object);
         }, true);
 

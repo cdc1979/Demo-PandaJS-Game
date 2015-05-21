@@ -3,6 +3,7 @@ pandaConfig = {
         center: true,
         width: 1024,
         height: 768,
-        startScene: 'Start'
+        startScene: 'Start',
+        xdelta: ""
     }
 };

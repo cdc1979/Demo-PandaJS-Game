@@ -89,8 +89,8 @@ game.createScene('Start', {
         this.world.addBody(wallBody);
 
         this.addTimer(200, function() {
-            new game.PhysicsObject(game.system.width / 10, game.system.height / 10);
-            //game.scene.addObject(object);
+            var object = new game.PhysicsObject(game.system.width / 10, game.system.height / 10);
+            game.scene.addObject(object);
         }, true);
     }
 });
