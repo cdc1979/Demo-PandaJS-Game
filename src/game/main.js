@@ -174,7 +174,7 @@ game.module(
             game.scene.removeObject(this);
             game.scene.stage.removeChild(this.sprite);
             game.scene.world.removeBody(this.body);
-            game.invulnerable = false;
+
         },
         update: function () {
             this.sprite.position.x = this.body.position[0] * game.scene.world.ratio;
@@ -372,10 +372,7 @@ game.createScene('Lose', {
 game.createClass('Ball', {
     textobject: null,
     interactive: true,
-    mouse: { x: 100, y: 100 },
     init: function (x, y) {
-
-
 
         var shape = new game.Circle(25 / game.scene.world.ratio);
         shape.collisionGroup = BALL;
@@ -425,7 +422,7 @@ game.createClass('Ball', {
             }
         }
 
-        console.log(this.mouse.x);
+        
 
 
         //game.world.gametimer.setText(gameTime);
@@ -504,16 +501,22 @@ game.createScene('Main', {
     },
     mousemove: function(e) {
 
-        console.log("test");
+        //console.log(e.global.y);
+        this.world.ball.body.velocity[0] = ((e.global.x / this.world.ratio - this.world.ball.body.position[0]))*1.3;
+        this.world.ball.body.velocity[1] = ((e.global.y / this.world.ratio - this.world.ball.body.position[1]))*1.5;
+
+        //console.log("test");
     },
     init: function() {
         //this.world = new game.World(0, 1000);
-        this.world = new game.World({ gravity: [0,9] });
+        this.world = new game.World({ gravity: [0,0] });
         this.world.ratio = 100;
         this.world.gameTime = gameTime;
         game.delta = game.system.delta;
         game.invulnerable = false;
 
+        var wld = this.world;
+        var g = this;
 
         this.world.on("beginContact", function (event) {
 
@@ -536,24 +539,50 @@ game.createScene('Main', {
                     //game.scene.world.removeBody(event.bodyB);
                     //game.system.setScene('Lose');
 
-                    spriteDelay = 500;
-
+                   
+                    
                     game.scene.world.specialtimer.set(randomBetween(10000, 15000));
 
                     if (event.shapeA.collisionGroup == SPECIALBLOCK) {
-
-                        if (event.bodyA.options.shapetype == "invulnerable")
-                        {
-                            event.bodyB.options.sprite.alpha = 0.5;
-                        }
-
                         //event.bodyA.remove();
                         game.scene.world.removeBody(event.bodyA);
                         game.scene.stage.removeChild(event.bodyA.options.sprite);
+                        //event.bodyB.options.sprite.alpha = 0.5;
+                        
+                        var st = event.bodyA.options.shapetype;
+                        if (st == "invulnerable") {
+                            wld.ball.sprite.alpha = 0.5;
+                            game.invulnerable = true;
+                            g.addTimer(5000, function () {
+                                game.invulnerable = false;
+                                wld.ball.sprite.alpha = 1;
+                            }, true);
+                        }
+                        else {
+                            spriteDelay = 850;
+                        }
+
                     }
                     if (event.shapeB.collisionGroup == SPECIALBLOCK) {
                         game.scene.world.removeBody(event.bodyB);
                         game.scene.stage.removeChild(event.bodyB.options.sprite);
+                        //event.bodyA.options.sprite.alpha = 0.5;
+                        wld.ball.sprite.alpha = 0.5;
+
+                        var st = event.bodyB.options.shapetype;
+                        if (st == "invulnerable") {
+                            wld.ball.sprite.alpha = 0.5;
+                            game.invulnerable = true;
+                            g.addTimer(5000, function () {
+                                game.invulnerable = false;
+                                wld.ball.sprite.alpha = 1;
+                            }, true);
+
+
+                        }
+                        else {
+                            spriteDelay = 850;
+                        }
 
                         //event.bodyB.remove();
                     }
@@ -633,7 +662,8 @@ game.createScene('Main', {
             game.scene.addObject(object);
         }, true);
 
-        game.scene.addObject(new game.Ball(890, 350));
+        this.world.ball = new game.Ball(890, 350);
+        game.scene.addObject(this.world.ball);
 
         this.world.textsprite = new game.PIXI.Text("Hello World!", { font: '60px Arial' });
         this.world.textsprite.addTo(game.scene.stage);
