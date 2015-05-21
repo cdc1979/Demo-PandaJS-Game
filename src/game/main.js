@@ -16,6 +16,10 @@ function randomBetween(min, max) {
     }
 }
 
+function roundToTwo(num) {
+    return +(Math.round(num + "e+2") + "e-2");
+}
+
 var gameTime = 0;
 var textCount = 0;
 var spriteDelay = 1000;
@@ -24,6 +28,7 @@ var WALL = Math.pow(2,0),
 BLOCK =  Math.pow(2,1),
 BALL = Math.pow(2,2),
 TOPBOTTOM = Math.pow(2, 3)
+SPECIALBLOCK = Math.pow(2, 4)
 
 game.module(
     'game.sprites',
@@ -49,9 +54,12 @@ game.module(
     game.addAsset('You-Lose.png');
     game.addAsset('Winner.png');
     game.addAsset('Game-Title.png');
+    game.addAsset("goodblock.png");
+    game.addAsset("goodblock2.png");
 
     game.addAudio('punch.ogg', 'punch');
     game.addAudio('Blop.ogg', 'Blop');
+    game.addAudio('Special.ogg' , 'Special')
 
 
     var topspeed = 500;
@@ -101,11 +109,86 @@ game.module(
         }
     });
 
+    game.createClass('SpecialBlock', {
+        size: 50,
+        init: function (x, y) {
+
+            game.audio.playSound("Special", false);
+
+            var shapetype = "";
+            var shape = null;
+            var str = "";
+            shape = new game.Circle(this.size / 2 / game.scene.world.ratio);
+            
+            var rnd = Math.random();
+            if (rnd <= 0.5) {
+                str = "goodblock.png";
+                shapetype = "slowdown";
+            }
+            else {
+                str = "goodblock2.png";
+                shapetype = "invulnerable";
+                game.invulnerable = true;
+            }
+
+            shape.collisionGroup = SPECIALBLOCK;
+            shape.collisionMask = BALL | BLOCK | TOPBOTTOM;
+
+            this.body = new game.Body({
+                gravityScale: 0,
+                mass: 0.1,
+                position: [
+                    x / game.scene.world.ratio,
+                    y / game.scene.world.ratio
+                ],
+                angularVelocity: 10
+            });
+            this.body.addShape(shape);
+
+            // Apply velocity
+            var force = randomBetween(2, 5);
+
+            var angle = randomBetween(-100, 100) / game.scene.world.ratio;
+
+            this.body.velocity[0] = 1 * force;
+            this.body.velocity[1] = angle * force;
+            //this.body.velocity[1] = 0.1 * force;
+
+            //this.body.setDensity(0.1);
+
+            this.sprite = new game.Sprite(str);
+
+            this.sprite.anchor.set(0.5, 0.5);
+            this.sprite.scale.set(0.3, 0.3);
+            this.sprite.position.set(x, y);
+
+            this.body.options = { sprite: this.sprite, shapetype: shapetype };
+
+            //game.scene.addObject(this);
+            game.scene.stage.addChild(this.sprite);
+            game.scene.world.addBody(this.body);
+            game.scene.addTimer(8000, this.remove.bind(this));
+
+        },
+        remove: function () {
+            game.scene.removeObject(this);
+            game.scene.stage.removeChild(this.sprite);
+            game.scene.world.removeBody(this.body);
+            game.invulnerable = false;
+        },
+        update: function () {
+            this.sprite.position.x = this.body.position[0] * game.scene.world.ratio;
+            this.sprite.position.y = this.body.position[1] * game.scene.world.ratio;
+            this.sprite.rotation = this.body.angle;
+            this.body.gravityScale = 0;
+        }
+    });
+
     game.createClass('Block', {
         size: 50,
         init: function (x, y) {
 
-            console.log("blobk");
+            //console.log("blobk");
             game.audio.playSound("Blop", false);
 
             var shape = null;
@@ -241,8 +324,9 @@ game.createScene('Lose', {
         this.sprite.addTo(game.scene.stage);
 
 
+        var gametime = Math.round(game.delta * 10000000000);
 
-        this.textobject = new game.PIXI.Text(gameTime, {
+        this.textobject = new game.PIXI.Text(gametime / 10000000, {
             font: '72px Arial',
             fill: "#fd0000",
             stroke: '#000000',
@@ -287,13 +371,15 @@ game.createScene('Lose', {
 
 game.createClass('Ball', {
     textobject: null,
+    interactive: true,
+    mouse: { x: 100, y: 100 },
     init: function (x, y) {
 
 
 
         var shape = new game.Circle(25 / game.scene.world.ratio);
         shape.collisionGroup = BALL;
-        shape.collisionMask = BLOCK | WALL | TOPBOTTOM;
+        shape.collisionMask = BLOCK | WALL | TOPBOTTOM | SPECIALBLOCK;
         this.body = new game.Body({
             mass: 0.2,
             gravityScale: 1,
@@ -332,22 +418,26 @@ game.createClass('Ball', {
         gameTime++;
 
         if (gameTime % 60 == 1) {
-            console.log(spriteDelay);
-            textCount++;
             
             if (spriteDelay > 100) {
-                spriteDelay = spriteDelay - 30;
+                spriteDelay = spriteDelay - 25;
                 game.scene.world.timer.set(spriteDelay);
             }
         }
 
-
+        console.log(this.mouse.x);
 
 
         //game.world.gametimer.setText(gameTime);
         this.sprite.position.x = this.body.position[0] * game.scene.world.ratio;
         this.sprite.position.y = this.body.position[1] * game.scene.world.ratio;
         this.sprite.angle = this.body.angle;
+
+        //this.sprite.position[0] = this.body.position[0];
+       // this.sprite.position[1] = this.body.position[1];
+        //this.body.velocity[0] = (this.mouse.x - this.body.position[0]);
+        //this.body.velocity[1] = (this.mouse.y - this.body.position[1]);
+
 
         //console.log(this.body.velocity[0]);
         //console.log(this.body.position.x);
@@ -378,7 +468,9 @@ game.createClass('Ball', {
         //this.sprite.position.y = this.body.position.y;
         //this.sprite.angle = this.body.angle;
 
-    },
+
+
+    }
 });
 
 game.createScene('Start', {
@@ -402,43 +494,72 @@ game.createScene('Start', {
 game.createScene('Main', {
     backgroundColor: 0xb9bec7,
     update: function () {
-        this.world.delta += game.system.delta;
+        this.world.textsprite.setText("");
+        game.delta += game.system.delta;
         //console.log(gametime);
-        
+        var gametime = Math.round(game.delta * 10000000000);
+        this.world.textsprite.setText(gametime / 10000000);
         this._super();
-        this.world.textsprite.setText(this.world.delta);
+        
+    },
+    mousemove: function(e) {
+
+        console.log("test");
     },
     init: function() {
         //this.world = new game.World(0, 1000);
         this.world = new game.World({ gravity: [0,9] });
         this.world.ratio = 100;
         this.world.gameTime = gameTime;
-        this.world.delta = game.system.delta;
-
+        game.delta = game.system.delta;
+        game.invulnerable = false;
 
 
         this.world.on("beginContact", function (event) {
 
-            if (event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == BLOCK) {
+                if ((event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == BLOCK) || (event.shapeB.collisionGroup == BLOCK && event.shapeA.collisionGroup == BALL)) {
 
-                //game.scene.removeObject(this);
-                //game.scene.world.removeBody(event.bodyA);
-                //game.scene.stage.removeChild(event.bodyA.options.sprite);
-                //game.scene.world.removeBody(event.bodyB);
+                    //game.scene.removeObject(this);
+                    //game.scene.world.removeBody(event.bodyA);
+                    //game.scene.stage.removeChild(event.bodyA.options.sprite);
+                    //game.scene.world.removeBody(event.bodyB);
+                    if (!game.invulnerable) {
+                        game.system.setScene('Lose');
+                    }
+                }
+
+                if ((event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == SPECIALBLOCK) || (event.shapeB.collisionGroup == SPECIALBLOCK && event.shapeA.collisionGroup == BALL)) {
+
+                    //game.scene.removeObject(this);
+                    //game.scene.world.removeBody(event.bodyA);
+                    //game.scene.stage.removeChild(event.bodyA.options.sprite);
+                    //game.scene.world.removeBody(event.bodyB);
+                    //game.system.setScene('Lose');
+
+                    spriteDelay = 500;
+
+                    game.scene.world.specialtimer.set(randomBetween(10000, 15000));
+
+                    if (event.shapeA.collisionGroup == SPECIALBLOCK) {
+
+                        if (event.bodyA.options.shapetype == "invulnerable")
+                        {
+                            event.bodyB.options.sprite.alpha = 0.5;
+                        }
+
+                        //event.bodyA.remove();
+                        game.scene.world.removeBody(event.bodyA);
+                        game.scene.stage.removeChild(event.bodyA.options.sprite);
+                    }
+                    if (event.shapeB.collisionGroup == SPECIALBLOCK) {
+                        game.scene.world.removeBody(event.bodyB);
+                        game.scene.stage.removeChild(event.bodyB.options.sprite);
+
+                        //event.bodyB.remove();
+                    }
+                }
 
 
-                game.system.setScene('Lose');
-
-                
-            }
-
-            if (event.shapeB.collisionGroup == BLOCK && event.shapeA.collisionGroup == BALL) {
-                //game.scene.world.removeBody(event.bodyB);
-                //game.scene.stage.removeChild(event.bodyB.options.sprite);
-                game.system.setScene('Lose');
-
-                
-            }
         });
 
         var sprite = new game.TilingSprite('Background.png', 0, 0);
@@ -472,7 +593,7 @@ game.createScene('Main', {
 
         wallShape = new game.Rectangle(game.system.width / this.world.ratio, 50 / this.world.ratio);
         wallShape.collisionGroup = TOPBOTTOM;
-        wallShape.collisionMask = BALL | BLOCK;
+        wallShape.collisionMask = BALL | BLOCK | SPECIALBLOCK;
         wallBody = new game.Body({
             position: [game.system.width / 2 / this.world.ratio, game.system.height / this.world.ratio]
         });
@@ -481,7 +602,7 @@ game.createScene('Main', {
 
         wallShape = new game.Rectangle(game.system.width / this.world.ratio, 50 / this.world.ratio);
         wallShape.collisionGroup = TOPBOTTOM;
-        wallShape.collisionMask = BALL | BLOCK;
+        wallShape.collisionMask = BALL | BLOCK | SPECIALBLOCK;
         wallBody = new game.Body({
             position: [game.system.width / 2 / this.world.ratio, 0]
         });
@@ -502,7 +623,13 @@ game.createScene('Main', {
         }*/
 
         this.world.timer = this.addTimer(spriteDelay, function () {
-            var object = new game.Block(-100, game.system.height / 2);
+            var object = new game.Block(-120, game.system.height / 2);
+            game.scene.addObject(object);
+        }, true);
+
+        var newdelay = randomBetween(5000, 6000);
+        this.world.specialtimer = this.addTimer(newdelay, function () {
+            var object = new game.SpecialBlock(-120, game.system.height / 2);
             game.scene.addObject(object);
         }, true);
 
