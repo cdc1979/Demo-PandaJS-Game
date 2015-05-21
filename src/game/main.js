@@ -190,7 +190,7 @@ game.module(
 
             //console.log("blobk");
             game.audio.playSound("Blop", false);
-
+            var shapetype = "block";
             var shape = null;
             var str = "";
             var rnd = Math.random();
@@ -244,6 +244,8 @@ game.module(
             this.sprite.anchor.set(0.5, 0.5);
             this.sprite.scale.set(0.081, 0.081)
             this.sprite.position.set(x, y);
+
+            this.body.options = { sprite: this.sprite, shapetype: shapetype };
 
             //game.scene.addObject(this);
             game.scene.stage.addChild(this.sprite);
@@ -522,34 +524,18 @@ game.createScene('Main', {
 
                 if ((event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == BLOCK) || (event.shapeB.collisionGroup == BLOCK && event.shapeA.collisionGroup == BALL)) {
 
-                    //game.scene.removeObject(this);
-                    //game.scene.world.removeBody(event.bodyA);
-                    //game.scene.stage.removeChild(event.bodyA.options.sprite);
-                    //game.scene.world.removeBody(event.bodyB);
                     if (!game.invulnerable) {
                         game.system.setScene('Lose');
                     }
                 }
 
-                if ((event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == SPECIALBLOCK) || (event.shapeB.collisionGroup == SPECIALBLOCK && event.shapeA.collisionGroup == BALL)) {
-
-                    //game.scene.removeObject(this);
-                    //game.scene.world.removeBody(event.bodyA);
-                    //game.scene.stage.removeChild(event.bodyA.options.sprite);
-                    //game.scene.world.removeBody(event.bodyB);
-                    //game.system.setScene('Lose');
-
-                   
-                    
-                    game.scene.world.specialtimer.set(randomBetween(10000, 15000));
-
-                    if (event.shapeA.collisionGroup == SPECIALBLOCK) {
-                        //event.bodyA.remove();
-                        game.scene.world.removeBody(event.bodyA);
-                        game.scene.stage.removeChild(event.bodyA.options.sprite);
-                        //event.bodyB.options.sprite.alpha = 0.5;
+                if ((event.shapeB.collisionGroup == BALL && event.shapeA.collisionGroup == SPECIALBLOCK)) 
+                {
+                    game.scene.world.removeBody(event.bodyA);
+                    game.scene.stage.removeChild(event.bodyA.options.sprite);
                         
-                        var st = event.bodyA.options.shapetype;
+                    var st = event.bodyA.options.shapetype;
+                    if (st) {
                         if (st == "invulnerable") {
                             wld.ball.sprite.alpha = 0.5;
                             game.invulnerable = true;
@@ -561,31 +547,34 @@ game.createScene('Main', {
                         else {
                             spriteDelay = 850;
                         }
-
                     }
-                    if (event.shapeB.collisionGroup == SPECIALBLOCK) {
+                }
+
+                if (event.shapeB.collisionGroup == SPECIALBLOCK && event.shapeA.collisionGroup == BALL) {
+
                         game.scene.world.removeBody(event.bodyB);
                         game.scene.stage.removeChild(event.bodyB.options.sprite);
-                        //event.bodyA.options.sprite.alpha = 0.5;
-                        wld.ball.sprite.alpha = 0.5;
+                        
 
                         var st = event.bodyB.options.shapetype;
-                        if (st == "invulnerable") {
-                            wld.ball.sprite.alpha = 0.5;
-                            game.invulnerable = true;
-                            g.addTimer(5000, function () {
-                                game.invulnerable = false;
-                                wld.ball.sprite.alpha = 1;
-                            }, true);
+                        if (st) {
+                            if (st == "invulnerable") {
+                                wld.ball.sprite.alpha = 0.5;
+                                game.invulnerable = true;
+                                g.addTimer(5000, function () {
+                                    game.invulnerable = false;
+                                    wld.ball.sprite.alpha = 1;
+                                }, true);
 
 
-                        }
-                        else {
-                            spriteDelay = 850;
+                            }
+                            else {
+                                spriteDelay = 850;
+                            }
                         }
 
                         //event.bodyB.remove();
-                    }
+  
                 }
 
 
